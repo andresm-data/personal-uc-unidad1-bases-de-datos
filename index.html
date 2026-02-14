@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mapa Mental Interactivo - Unidad 1 Bases de Datos</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --card: #1f2937;
+      --card-2: #243447;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #22d3ee;
+      --ok: #34d399;
+      --line: #334155;
+      --shadow: 0 10px 25px rgba(0,0,0,.25);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(56, 189, 248, .12), transparent 28%),
+        radial-gradient(circle at 80% 0%, rgba(34, 211, 238, .10), transparent 30%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      width: min(1100px, 92vw);
+      margin: 24px auto 48px;
+    }
+
+    header {
+      background: linear-gradient(120deg, rgba(56,189,248,.17), rgba(34,211,238,.08));
+      border: 1px solid rgba(56, 189, 248, .35);
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.2rem, 3vw, 1.8rem);
+      letter-spacing: .2px;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: .98rem;
+      line-height: 1.45;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .pill {
+      background: rgba(15, 23, 42, .55);
+      border: 1px solid rgba(148, 163, 184, .25);
+      color: #cbd5e1;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: .82rem;
+    }
+
+    .map {
+      margin-top: 18px;
+      border: 1px solid rgba(148, 163, 184, .2);
+      border-radius: 16px;
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(17,24,39,.95), rgba(15,23,42,.95));
+      box-shadow: var(--shadow);
+    }
+
+    .tree,
+    .tree ul {
+      list-style: none;
+      margin: 0;
+      padding-left: 18px;
+      position: relative;
+    }
+
+    .tree ul::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 0;
+      bottom: 4px;
+      width: 1px;
+      background: var(--line);
+    }
+
+    .node {
+      margin: 10px 0;
+      position: relative;
+    }
+
+    .node::before {
+      content: "";
+      position: absolute;
+      left: -10px;
+      top: 17px;
+      width: 10px;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .branch {
+      width: 100%;
+      text-align: left;
+      color: var(--text);
+      background: linear-gradient(180deg, var(--card), var(--card-2));
+      border: 1px solid rgba(148,163,184,.25);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: .18s ease;
+      font-weight: 600;
+      letter-spacing: .1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .branch:hover,
+    .branch:focus-visible {
+      border-color: rgba(56,189,248,.65);
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .branch .icon {
+      flex: 0 0 auto;
+      width: 1.2rem;
+      text-align: center;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .branch small {
+      color: var(--muted);
+      font-weight: 500;
+      margin-left: 6px;
+    }
+
+    .content {
+      margin: 8px 0 4px 30px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,.2);
+      background: rgba(2,6,23,.45);
+      color: #dbe3ef;
+      line-height: 1.55;
+      display: none;
+    }
+
+    .node.open > .content,
+    .node.open > ul {
+      display: block;
+      animation: fade .18s ease;
+    }
+
+    .node > ul { display: none; }
+
+    @keyframes fade {
+      from { opacity: 0; transform: translateY(-2px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .note {
+      margin-top: 14px;
+      color: #93c5fd;
+      font-size: .9rem;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .ok {
+      color: var(--ok);
+      font-weight: 700;
+    }
+
+    footer {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: .86rem;
+      text-align: center;
+    }
+
+    @media (max-width: 700px) {
+      .wrap { width: 95vw; }
+      .map { padding: 14px; }
+      .content { margin-left: 20px; }
+      .tree, .tree ul { padding-left: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Unidad 1: Elementos de un sistema de bases de datos</h1>
+      <p class="subtitle">
+        Mapa mental interactivo basado en los temas de la unidad. Todo el contenido está explicado con palabras simples.
+      </p>
+      <div class="legend">
+        <span class="pill">Haz clic en cada tarjeta para abrir o cerrar ramas</span>
+        <span class="pill">Ideal para publicar en GitHub Pages</span>
+      </div>
+    </header>
+
+    <section class="map" aria-label="Mapa mental interactivo">
+      <ul class="tree" id="mindMap">
+        <li class="node open">
+          <button class="branch" type="button" aria-expanded="true">
+            <span class="icon">−</span>
+            Bases de datos (visión general)
+          </button>
+          <div class="content">
+            Una base de datos es una forma ordenada de guardar información para consultarla, actualizarla y analizarla con rapidez.
+          </div>
+
+          <ul>
+            <li class="node">
+              <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Introducción</button>
+              <div class="content">
+                Hoy las empresas necesitan responder preguntas complejas en poco tiempo. Por eso, diseñar bien una base de datos desde el principio ayuda a que el sistema sea rápido y se adapte a cambios.
+              </div>
+            </li>
+
+            <li class="node">
+              <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Objetivo de la unidad</button>
+              <div class="content">
+                Reconocer las piezas clave de un sistema de bases de datos y entender cómo apoyan la gestión de información en una organización.
+              </div>
+            </li>
+
+            <li class="node">
+              <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>¿Qué es una base de datos?</button>
+              <div class="content">
+                Es un repositorio organizado: los datos no quedan sueltos, sino estructurados para poder encontrarlos fácilmente y tomar decisiones con menos errores.
+              </div>
+              <ul>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Ventajas principales</button>
+                  <div class="content">
+                    Consultas rápidas, posibilidad de crecer sin rehacer todo, mejor organización y más control sobre la información.
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Características clave</button>
+                  <div class="content">
+                    <ul>
+                      <li>Independencia: los datos pueden usarse desde distintos programas.</li>
+                      <li>Menos repetición: se evita duplicar información innecesaria.</li>
+                      <li>Seguridad: se controla quién puede ver o modificar cada dato.</li>
+                    </ul>
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Buenas prácticas de diseño</button>
+                  <div class="content">
+                    Separar en tablas para evitar repeticiones, asegurar datos correctos y mantener integridad para que reportes y análisis sean confiables.
+                  </div>
+                </li>
+              </ul>
+            </li>
+
+            <li class="node">
+              <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Programas para BD (DBMS)</button>
+              <div class="content">
+                Un DBMS es el software que define cómo se guardan los datos y permite consultarlos o cambiarlos de forma controlada.
+              </div>
+              <ul>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Funciones base</button>
+                  <div class="content">
+                    Definir estructura (tablas, campos, reglas) y manipular información (insertar, consultar, actualizar, eliminar).
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Recursos de un sistema BD</button>
+                  <div class="content">
+                    Personas, equipos, programas y datos trabajando juntos.
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Arquitectura en 3 capas</button>
+                  <div class="content">
+                    <ul>
+                      <li>Física: dónde y cómo se guarda realmente la información.</li>
+                      <li>Conceptual: representación lógica del negocio.</li>
+                      <li>Vista: parte de la información que ve cada usuario según permisos.</li>
+                    </ul>
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Modelos de datos</button>
+                  <div class="content">
+                    <ul>
+                      <li>Relacional: tablas conectadas por campos comunes.</li>
+                      <li>Red: registros unidos por múltiples enlaces.</li>
+                      <li>Jerárquico: estructura tipo árbol (padre-hijo).</li>
+                    </ul>
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Módulos internos del DBMS</button>
+                  <div class="content">
+                    Incluye componentes para definir estructuras (DDL), manipular datos (DML), procesar consultas y traducir peticiones entre distintos niveles.
+                  </div>
+                </li>
+              </ul>
+            </li>
+
+            <li class="node">
+              <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Calidad de la información</button>
+              <div class="content">
+                Una base de datos útil no solo guarda datos: también protege su exactitud y coherencia.
+              </div>
+              <ul>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Integridad de datos</button>
+                  <div class="content">
+                    Significa que los datos son válidos y consistentes. Se aplican reglas para evitar errores, por ejemplo impedir un teléfono en un campo de fecha.
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Redundancia</button>
+                  <div class="content">
+                    Es repetir la misma información en varios lugares. Esto gasta espacio y puede generar contradicciones.
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Consistencia</button>
+                  <div class="content">
+                    Todas las copias y referencias de los datos deben coincidir. Si se actualiza un dato, el cambio debe reflejarse en todo el sistema.
+                  </div>
+                </li>
+              </ul>
+            </li>
+
+            <li class="node">
+              <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Entidades</button>
+              <div class="content">
+                Son los “objetos” sobre los que guardamos información: personas, productos, eventos, lugares o ideas del negocio.
+              </div>
+              <ul>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Tipos</button>
+                  <div class="content">
+                    <ul>
+                      <li>Fuerte: existe por sí sola.</li>
+                      <li>Débil: depende de otra entidad para existir.</li>
+                    </ul>
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Conjunto de objetos</button>
+                  <div class="content">
+                    Grupo de elementos con características comunes, por ejemplo ciudades de un país o jugadores de un torneo.
+                  </div>
+                </li>
+              </ul>
+            </li>
+
+            <li class="node">
+              <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Campos y atributos</button>
+              <div class="content">
+                Los campos son columnas de una tabla. Los atributos son las propiedades que describen cada entidad.
+              </div>
+              <ul>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Campos</button>
+                  <div class="content">
+                    Sirven para estructurar la tabla y también para conectar tablas entre sí mediante identificadores comunes.
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Atributos y dominio</button>
+                  <div class="content">
+                    Cada atributo toma valores dentro de un dominio (conjunto permitido de valores), por ejemplo fechas válidas o códigos definidos.
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Clasificación de atributos</button>
+                  <div class="content">
+                    <ul>
+                      <li>Simple o compuesto.</li>
+                      <li>De valor único o multivaluado.</li>
+                      <li>Derivado (se calcula a partir de otros datos).</li>
+                    </ul>
+                  </div>
+                </li>
+              </ul>
+            </li>
+
+            <li class="node">
+              <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Relaciones y tipos</button>
+              <div class="content">
+                Una relación conecta entidades y expresa cómo dependen entre sí dentro del sistema.
+              </div>
+              <ul>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Por cantidad de entidades</button>
+                  <div class="content">
+                    <ul>
+                      <li>Reflexiva: una entidad se relaciona consigo misma.</li>
+                      <li>Binaria: participan dos entidades.</li>
+                      <li>N-aria: participan tres o más entidades.</li>
+                    </ul>
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Cardinalidad</button>
+                  <div class="content">
+                    Indica cuántas ocurrencias de una entidad pueden asociarse con otra. Ayuda a evitar duplicados y errores en reportes.
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>1:1 (uno a uno)</button>
+                  <div class="content">
+                    Cada registro de A se relaciona con uno de B, y cada registro de B con uno de A.
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>1:M (uno a muchos)</button>
+                  <div class="content">
+                    Un registro de A puede tener varios en B, pero cada registro de B pertenece a un solo A.
+                  </div>
+                </li>
+                <li class="node">
+                  <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>N:M (muchos a muchos)</button>
+                  <div class="content">
+                    Varios registros de A se asocian con varios de B. Suele requerir una tabla intermedia para implementarse.
+                  </div>
+                </li>
+              </ul>
+            </li>
+
+            <li class="node">
+              <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Herramientas tecnológicas recomendadas</button>
+              <div class="content">
+                <ul>
+                  <li><strong>MySQL Workbench:</strong> diseño y administración visual de bases de datos MySQL.</li>
+                  <li><strong>Diagrams.net:</strong> creación de diagramas (flujo, UML, redes, etc.).</li>
+                  <li><strong>XAMPP:</strong> entorno local con Apache, MySQL/MariaDB, PHP y Perl.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="node">
+              <button class="branch" type="button" aria-expanded="false"><span class="icon">+</span>Resumen rápido</button>
+              <div class="content">
+                <span class="ok">Idea central:</span> diseñar bien una base de datos permite almacenar información confiable, relacionarla correctamente y consultarla de forma eficiente.
+              </div>
+            </li>
+          </ul>
+        </li>
+      </ul>
+
+      <p class="note">💡 Tip: puedes abrir solo las ramas que necesites para estudiar por partes.</p>
+    </section>
+
+    <footer>
+      Material educativo para estudio personal · Formato interactivo listo para GitHub
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      const map = document.getElementById('mindMap');
+      if (!map) return;
+
+      const buttons = map.querySelectorAll('.branch');
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const node = btn.parentElement;
+          const isOpen = node.classList.toggle('open');
+          btn.setAttribute('aria-expanded', String(isOpen));
+          const icon = btn.querySelector('.icon');
+          if (icon) icon.textContent = isOpen ? '−' : '+';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
